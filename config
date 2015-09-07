@@ -1,0 +1,13 @@
+[Main]
+User="0007020admin@spb.swisstok.ru";
+Password="Gd4jJD34";
+Host="xsp1.spb.swisstok.ru";
+HTTPHost="xsp1.spb.swisstok.ru"
+Port="80";
+Expires="600";
+#Target="enterprise";
+#TargetID="0007020";
+#Event="Call Forwarding Always";
+Target="User";
+TargetID="00070207562@spb.swisstok.ru";
+Event="Basic Call";
