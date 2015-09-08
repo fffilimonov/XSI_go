@@ -20,6 +20,8 @@ type CallInfo struct {
     State string `xml:"eventData>call>state"`
     Hook string `xml:"eventData>hookStatus"`
     Addr string `xml:"eventData>call>remoteParty>address"`
+    CCstatus string `xml:"eventData>stateInfo>state"`
+    CCstatuschanged string `xml:"eventData>agentStateInfo>state"`
 }
 
 func ParseData (data []byte) CallInfo {

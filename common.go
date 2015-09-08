@@ -19,8 +19,8 @@ type ConfigT struct {
         Port string
         Expires string
         Target string
-        TargetID string
-        Event string
+        TargetID []string
+        Event []string
     }
 }
 

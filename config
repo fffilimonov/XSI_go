@@ -1,13 +1,15 @@
 [Main]
-User="0007020admin@spb.swisstok.ru";
-Password="Gd4jJD34";
-Host="xsp1.spb.swisstok.ru";
-HTTPHost="xsp1.spb.swisstok.ru"
+User="admin@broadworks.ru";
+Password="11111";
+Host="xsp1.broadworks.ru";
+HTTPHost="xsp1.broadworks.ru"
 Port="80";
 Expires="600";
-#Target="enterprise";
-#TargetID="0007020";
-#Event="Call Forwarding Always";
 Target="User";
-TargetID="00070207562@spb.swisstok.ru";
+TargetID="12345@broadworks.ru";
+TargetID="23456@broadworks.ru";
+TargetID="34567@broadworks.ru";
+TargetID="45678@broadworks.ru";
+TargetID="56789@broadworks.ru";
 Event="Basic Call";
+Event="Call Center Agent";

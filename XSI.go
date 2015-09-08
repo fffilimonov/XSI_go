@@ -54,9 +54,9 @@ func XSISubscribeCH (Config ConfigT,def DefHead) (net.Conn,string) {
     return chandesc,chanID
 }
 
-func XSISubscribe (Config ConfigT,def DefHead) {
-    var CHANPOST string = ConcatStr("","POST /com.broadsoft.xsi-events/v2.0/",Config.Main.Target,"/",Config.Main.TargetID,"/subscription HTTP/1.1")
-    var CHANSET string = ConcatStr("","<Subscription xmlns=\"http://schema.broadsoft.com/xsi\"><event>",Config.Main.Event,"</event><expires>",Config.Main.Expires,"</expires><channelSetId>",def.CHANID,"</channelSetId><applicationId>CommPilotApplication</applicationId></Subscription>")
+func XSISubscribe (Config ConfigT,def DefHead,target string,event string) {
+    var CHANPOST string = ConcatStr("","POST /com.broadsoft.xsi-events/v2.0/",Config.Main.Target,"/",target,"/subscription HTTP/1.1")
+    var CHANSET string = ConcatStr("","<Subscription xmlns=\"http://schema.broadsoft.com/xsi\"><event>",event,"</event><expires>",Config.Main.Expires,"</expires><channelSetId>",def.CHANID,"</channelSetId><applicationId>CommPilotApplication</applicationId></Subscription>")
     var CHANLEN string = ConcatStr("","Content-Length: ",strconv.Itoa(len(CHANSET)))
     subdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.Port))
     if err != nil {
@@ -120,8 +120,13 @@ func XSIresubscribe(Config ConfigT,cCh chan net.Conn) {
                 channel,chanID := XSISubscribeCH(Config,def)
                 lchannel = channel
                 lchanID = chanID
-                XSISubscribe(Config,def)
-                cCh <- channel
+                for _,target := range Config.Main.TargetID {
+                    for _,event := range Config.Main.Event {
+                        XSISubscribe(Config,def,target,event)
+                        cCh <- channel
+                        time.Sleep(time.Millisecond*500)
+                    }
+                }
                 timer.Reset(time.Second*time.Duration(exp))
                 timer2.Reset(time.Second*6)
             case <-timer2.C:
@@ -189,12 +194,12 @@ func XSImain(Config ConfigT,def DefHead,ch chan string,datach chan string) {
                 if eventID != "" {
                     XSIResponse(eventID,def,Config)
                     datach <- data
-                    time.Sleep(time.Millisecond*500)
+                    time.Sleep(time.Millisecond*100)
                 } else {
                     LogErr(nil,data)
                 }
             default:
-                time.Sleep(time.Millisecond*100)
+                time.Sleep(time.Millisecond*250)
         }
     }
 }
