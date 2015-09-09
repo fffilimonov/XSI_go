@@ -24,6 +24,16 @@ type CallInfo struct {
     CCstatuschanged string `xml:"eventData>agentStateInfo>state"`
 }
 
+type OCIP struct {
+    Nonce string `xml:"command>nonce"`
+}
+
+func ParseOCIP (data []byte) OCIP {
+    var ocip OCIP
+    xml.Unmarshal(data, &ocip)
+    return ocip
+}
+
 func ParseData (data []byte) CallInfo {
     var callinfo CallInfo
     xml.Unmarshal(data, &callinfo)

@@ -8,8 +8,21 @@ import (
     "net"
     "os"
     "time"
+    "strings"
 )
 
+func guiinit(theme gxui.Theme,font gxui.Font) (gxui.Label,gxui.LinearLayout) {
+    var label gxui.Label
+    var cell gxui.LinearLayout
+    label = theme.CreateLabel()
+    label.SetColor(gxui.Black)
+    label.SetFont(font)
+    cell = theme.CreateLinearLayout()
+    cell.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
+    cell.SetHorizontalAlignment(gxui.AlignLeft)
+    cell.AddChild(label)
+    return label,cell
+}
 
 func appMain(driver gxui.Driver) {
     guich := make(chan CallInfo,100)
@@ -23,7 +36,6 @@ func appMain(driver gxui.Driver) {
     Config := ReadConfig(file)
     go clientMain(guich,Config)
     guiMain (driver,guich,arg1,Config)
-//    go clientMain(guich,Config)
 }
 
 func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT) {
@@ -34,6 +46,32 @@ func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT
     }
     window := theme.CreateWindow(600, 300, "Call")
     window.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
+
+
+//button
+    layout := theme.CreateLinearLayout()
+    layout.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
+    layout.SetDirection(gxui.LeftToRight)
+
+    button := func(name string, action func()) gxui.Button {
+        b := theme.CreateButton()
+        b.SetText(name)
+        b.OnClick(func(gxui.MouseEvent){action()})
+        layout.AddChild(b)
+        return b
+    }
+
+    button("Available",func() {
+        Log2Out("pressed Avail")
+        OCIPsend(Config,owner,"Available")
+    },)
+    button("Unavailable",func() {
+        Log2Out("pressed Unavail")
+        OCIPsend(Config,owner,"Unavailable")
+    },)
+    window.AddChild(layout)
+//button
+
 //for incoming call
     label1 := theme.CreateLabel()
     label1.SetColor(gxui.Black)
@@ -46,67 +84,21 @@ func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT
     cell1.AddChild(label1)
 
 //targets
-    var dlabel1 map[string]gxui.Label
+    var dlabel1,dlabel2,dlabel3 map[string]gxui.Label
+    var dcell1,dcell2,dcell3 map[string]gxui.LinearLayout
+    count:=1
     dlabel1 = make(map[string]gxui.Label)
-    var dcell1 map[string]gxui.LinearLayout
     dcell1 = make(map[string]gxui.LinearLayout)
-    var dlabel2 map[string]gxui.Label
     dlabel2 = make(map[string]gxui.Label)
-    var dcell2 map[string]gxui.LinearLayout
     dcell2 = make(map[string]gxui.LinearLayout)
-    var dlabel3 map[string]gxui.Label
     dlabel3 = make(map[string]gxui.Label)
-    var dcell3 map[string]gxui.LinearLayout
     dcell3 = make(map[string]gxui.LinearLayout)
 
-
-    count:=1
-    for _,target := range Config.Main.TargetID {
+     for _,target := range Config.Main.TargetID {
         count=count+1
-        var tmplabel gxui.Label = dlabel1[target]
-        var tmpcell gxui.LinearLayout = dcell1[target]
-
-        tmplabel = theme.CreateLabel()
-        tmplabel.SetColor(gxui.Black)
-        tmplabel.SetFont(font)
-        tmplabel.SetText(target)
-
-        tmpcell = theme.CreateLinearLayout()
-        tmpcell.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
-        tmpcell.SetHorizontalAlignment(gxui.AlignLeft)
-        dlabel1[target] = tmplabel
-        tmpcell.AddChild(dlabel1[target])
-        dcell1[target] = tmpcell
-
-        tmplabel = dlabel2[target]
-        tmpcell = dcell2[target]
-
-        tmplabel = theme.CreateLabel()
-        tmplabel.SetColor(gxui.Black)
-        tmplabel.SetFont(font)
-        tmplabel.SetText("")
-
-        tmpcell = theme.CreateLinearLayout()
-        tmpcell.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
-        tmpcell.SetHorizontalAlignment(gxui.AlignLeft)
-        dlabel2[target] = tmplabel
-        tmpcell.AddChild(dlabel2[target])
-        dcell2[target] = tmpcell
-
-        tmplabel = dlabel3[target]
-        tmpcell = dcell3[target]
-
-        tmplabel = theme.CreateLabel()
-        tmplabel.SetColor(gxui.Black)
-        tmplabel.SetFont(font)
-        tmplabel.SetText("")
-
-        tmpcell = theme.CreateLinearLayout()
-        tmpcell.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
-        tmpcell.SetHorizontalAlignment(gxui.AlignLeft)
-        dlabel3[target] = tmplabel
-        tmpcell.AddChild(dlabel3[target])
-        dcell3[target] = tmpcell
+        dlabel1[target],dcell1[target] = guiinit(theme,font)
+        dlabel2[target],dcell2[target] = guiinit(theme,font)
+        dlabel3[target],dcell3[target] = guiinit(theme,font)
     }
 
     table := theme.CreateTableLayout()
@@ -120,6 +112,9 @@ func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT
         table.SetChildAt(0, count, 1, 1, dcell1[target])
         table.SetChildAt(1, count, 1, 1, dcell2[target])
         table.SetChildAt(2, count, 1, 1, dcell3[target])
+        var inittarget gxui.Label = dlabel1[target]
+        inittarget.SetText(target)
+        dlabel1[target] = inittarget
     }
 
     window.AddChild(table)
@@ -131,7 +126,7 @@ func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT
                     driver.Call(func() {
                         if cinfo.Target==owner {
                             if cinfo.Pers == "Terminator" && cinfo.State == "Alerting" {
-                                label1.SetText(cinfo.Addr)
+                                label1.SetText(strings.Trim(cinfo.Addr,"tel:"))
                             }
                             if cinfo.Pers == "Terminator" && cinfo.State == "Released" {
                                 label1.SetText("")

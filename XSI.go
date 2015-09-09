@@ -31,7 +31,7 @@ func XSISubscribeCH (Config ConfigT,def DefHead) (net.Conn,string) {
     var CPOST string = "POST /com.broadsoft.async/com.broadsoft.xsi-events/v2.0/channel HTTP/1.1";
     var CSET string = ConcatStr("","<?xml version=\"1.0\" encoding=\"UTF-8\"?><Channel xmlns=\"http://schema.broadsoft.com/xsi\"><channelSetId>",def.CHANID,"</channelSetId><priority>1</priority><weight>100</weight><expires>",Config.Main.Expires,"</expires></Channel>")
     var CLEN string = ConcatStr("","Content-Length: ",strconv.Itoa(len(CSET)))
-    chandesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.Port))
+    chandesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
     if err != nil {
         LogErr(err,"chan dial")
         os.Exit(1)
@@ -58,7 +58,7 @@ func XSISubscribe (Config ConfigT,def DefHead,target string,event string) {
     var CHANPOST string = ConcatStr("","POST /com.broadsoft.xsi-events/v2.0/",Config.Main.Target,"/",target,"/subscription HTTP/1.1")
     var CHANSET string = ConcatStr("","<Subscription xmlns=\"http://schema.broadsoft.com/xsi\"><event>",event,"</event><expires>",Config.Main.Expires,"</expires><channelSetId>",def.CHANID,"</channelSetId><applicationId>CommPilotApplication</applicationId></Subscription>")
     var CHANLEN string = ConcatStr("","Content-Length: ",strconv.Itoa(len(CHANSET)))
-    subdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.Port))
+    subdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
     if err != nil {
         LogErr(err,"sub dial")
         os.Exit(1)
@@ -83,7 +83,7 @@ LogErr(nil,"start response")
     var CONFPOST string = "POST /com.broadsoft.xsi-events/v2.0/channel/eventresponse HTTP/1.1"
     var CONFSET string = ConcatStr("","<?xml version=\"1.0\" encoding=\"UTF-8\"?><EventResponse xmlns=\"http://schema.broadsoft.com/xsi\"><eventID>",ID,"</eventID><statusCode>200</statusCode><reason>OK</reason></EventResponse>")
     var CONFLEN string = ConcatStr("","Content-Length: ",strconv.Itoa(len(CONFSET)))
-    respdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.Port))
+    respdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
     if err != nil {
         LogErr(err,"resp dial")
         os.Exit(1)
@@ -166,7 +166,7 @@ func XSIread(ch chan string,cCh chan net.Conn) {
 func XSIheartbeat(Config ConfigT,def DefHead,channelID string) int {
     var result int = 0
     var PUTHEARTBEAT string =ConcatStr("","PUT /com.broadsoft.xsi-events/v2.0/channel/",channelID,"/heartbeat HTTP/1.1")
-    hdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.Port))
+    hdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
     if err != nil {
         LogErr(err,"HB dial")
         os.Exit(1)
