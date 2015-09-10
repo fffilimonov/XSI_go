@@ -6,6 +6,7 @@ HTTPHost="broadworks.com"
 HTTPPort="80";
 OCIPPort="2208";
 Expires="600";
+Wraptime="15";
 Target="User";
 TargetID="7562@broadworks.com";
 TargetID="2901@broadworks.com";
