@@ -1,15 +1,13 @@
 [Main]
-User="admin@broadworks.ru";
-Password="11111";
-Host="xsp1.broadworks.ru";
-HTTPHost="xsp1.broadworks.ru"
-Port="80";
+User="admin@broadworks.com";
+Password="12345";
+Host="broadworks.com";
+HTTPHost="broadworks.com"
+HTTPPort="80";
+OCIPPort="2208";
 Expires="600";
 Target="User";
-TargetID="12345@broadworks.ru";
-TargetID="23456@broadworks.ru";
-TargetID="34567@broadworks.ru";
-TargetID="45678@broadworks.ru";
-TargetID="56789@broadworks.ru";
+TargetID="7562@broadworks.com";
+TargetID="2901@broadworks.com";
 Event="Basic Call";
 Event="Call Center Agent";
