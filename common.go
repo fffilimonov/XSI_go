@@ -23,6 +23,7 @@ type ConfigT struct {
         OCIPPort string
         Expires string
         Target string
+        Wraptime time.Duration
         TargetID []string
         Event []string
     }

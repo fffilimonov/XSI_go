@@ -27,11 +27,14 @@ func buildreq (SESSION string,USERID string,COMMAND string,ARG1 string) string {
 
 func OCIPsend(Config ConfigT,owner string,ARG string){
     var SESSION string = randSeq(10)
-    chandesc, err := net.Dial("tcp",ConcatStr(":",Config.Main.Host,Config.Main.OCIPPort))
-    chandesc.SetReadDeadline(time.Now().Add(time.Second))
+    var dialer net.Dialer
+    dialer.Timeout=time.Second
+    chandesc, err := dialer.Dial("tcp",ConcatStr(":",Config.Main.Host,Config.Main.OCIPPort))
     if err != nil {
         LogErr(err,"ocip dial")
+        return
     }
+    chandesc.SetReadDeadline(time.Now().Add(time.Second))
     REQ := buildreq (SESSION,Config.Main.User,"AuthenticationRequest","")
     fmt.Fprintf(chandesc,"%s",REQ)
     chanreader := bufio.NewReader(chandesc)

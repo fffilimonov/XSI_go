@@ -23,6 +23,14 @@ func appMain(driver gxui.Driver) {
     guiMain (driver,guich,arg1,Config)
 }
 
+func ontimer (timer *time.Timer,Config ConfigT,owner string) {
+    for{
+        <-timer.C
+        Log2Out("on timer")
+        OCIPsend(Config,owner,"Available")
+    }
+}
+
 func guiinit(theme gxui.Theme,font gxui.Font) (gxui.Label,gxui.LinearLayout) {
     var label gxui.Label
     var cell gxui.LinearLayout
@@ -36,7 +44,7 @@ func guiinit(theme gxui.Theme,font gxui.Font) (gxui.Label,gxui.LinearLayout) {
     return label,cell
 }
 
-func setButtons(button1 gxui.Button, button2 gxui.Button, button3 gxui.Button, status string) {
+func setButtons(button1 gxui.Button, button2 gxui.Button, button3 gxui.Button, status string,timer *time.Timer,Config ConfigT) {
     if status == "Available" {
         button1.SetChecked(true)
         button2.SetChecked(false)
@@ -48,12 +56,12 @@ func setButtons(button1 gxui.Button, button2 gxui.Button, button3 gxui.Button, s
         button3.SetChecked(false)
     }
     if status == "Wrap-Up" {
+        timer.Reset(time.Second * Config.Main.Wraptime)
         button1.SetChecked(false)
         button2.SetChecked(false)
         button3.SetChecked(true)
     }
 }
-
 
 //    button1.SetBackgroundBrush(gxui.CreateBrush(gxui.Red80))
 //    button1.SetBorderPen(gxui.CreatePen(5, gxui.Gray80))
@@ -69,6 +77,9 @@ func initButton(theme gxui.Theme,Config ConfigT,owner string,status string) gxui
 }
 
 func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT) {
+    timer := time.NewTimer(time.Second * 5)
+    timer.Stop()
+    go ontimer (timer,Config,owner)
     theme := flags.CreateTheme(driver)
     font, _ := driver.CreateFont(gxfont.Default, 15)
     font1, _ := driver.CreateFont(gxfont.Default, 35)
@@ -77,7 +88,6 @@ func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT
     layout := theme.CreateLinearLayout()
     layout.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
     layout.SetDirection(gxui.TopToBottom)
-
 
 //buttons
     button1 := initButton(theme,Config,owner,"Available")
@@ -131,7 +141,7 @@ func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT
             dlabel1[target] = inittarget
         }
     }
-layout.AddChild(table)
+    layout.AddChild(table)
     window.AddChild(layout)
 
     go func() {
@@ -147,10 +157,10 @@ layout.AddChild(table)
                                 label1.SetText("")
                             }
                             if cinfo.CCstatus != "" {
-                                setButtons(button1,button2,button3,cinfo.CCstatus)
+                                setButtons(button1,button2,button3,cinfo.CCstatus,timer,Config)
                             }
                             if cinfo.CCstatuschanged != "" {
-                                setButtons(button1,button2,button3,cinfo.CCstatuschanged)
+                                setButtons(button1,button2,button3,cinfo.CCstatuschanged,timer,Config)
                             }
                         }
                         var tmpset2 gxui.Label = dlabel2[cinfo.Target]

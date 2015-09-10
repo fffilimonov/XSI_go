@@ -31,7 +31,9 @@ func XSISubscribeCH (Config ConfigT,def DefHead) (net.Conn,string) {
     var CPOST string = "POST /com.broadsoft.async/com.broadsoft.xsi-events/v2.0/channel HTTP/1.1";
     var CSET string = ConcatStr("","<?xml version=\"1.0\" encoding=\"UTF-8\"?><Channel xmlns=\"http://schema.broadsoft.com/xsi\"><channelSetId>",def.CHANID,"</channelSetId><priority>1</priority><weight>100</weight><expires>",Config.Main.Expires,"</expires></Channel>")
     var CLEN string = ConcatStr("","Content-Length: ",strconv.Itoa(len(CSET)))
-    chandesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
+    var dialer net.Dialer
+    dialer.Timeout=time.Second
+    chandesc, err := dialer.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
     if err != nil {
         LogErr(err,"chan dial")
         os.Exit(1)
