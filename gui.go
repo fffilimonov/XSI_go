@@ -23,14 +23,6 @@ func appMain(driver gxui.Driver) {
     guiMain (driver,guich,arg1,Config)
 }
 
-func ontimer (timer *time.Timer,Config ConfigT,owner string) {
-    for{
-        <-timer.C
-        Log2Out("on timer")
-        OCIPsend(Config,owner,"Available")
-    }
-}
-
 func guiinit(theme gxui.Theme,font gxui.Font) (gxui.Label,gxui.LinearLayout) {
     var label gxui.Label
     var cell gxui.LinearLayout
@@ -45,6 +37,7 @@ func guiinit(theme gxui.Theme,font gxui.Font) (gxui.Label,gxui.LinearLayout) {
 }
 
 func setButtons(button1 gxui.Button, button2 gxui.Button, button3 gxui.Button, status string,timer *time.Timer,Config ConfigT) {
+    timer.Stop()
     if status == "Available" {
         button1.SetChecked(true)
         button2.SetChecked(false)
@@ -63,8 +56,6 @@ func setButtons(button1 gxui.Button, button2 gxui.Button, button3 gxui.Button, s
     }
 }
 
-//    button1.SetBackgroundBrush(gxui.CreateBrush(gxui.Red80))
-//    button1.SetBorderPen(gxui.CreatePen(5, gxui.Gray80))
 func initButton(theme gxui.Theme,Config ConfigT,owner string,status string) gxui.Button {
     button := theme.CreateButton()
     button.SetText(status)
@@ -77,9 +68,8 @@ func initButton(theme gxui.Theme,Config ConfigT,owner string,status string) gxui
 }
 
 func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT) {
-    timer := time.NewTimer(time.Second * 5)
+    timer := time.NewTimer(time.Second)
     timer.Stop()
-    go ontimer (timer,Config,owner)
     theme := flags.CreateTheme(driver)
     font, _ := driver.CreateFont(gxfont.Default, 15)
     font1, _ := driver.CreateFont(gxfont.Default, 35)
@@ -163,20 +153,24 @@ func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT
                                 setButtons(button1,button2,button3,cinfo.CCstatuschanged,timer,Config)
                             }
                         }
-                        var tmpset2 gxui.Label = dlabel2[cinfo.Target]
-                        var tmpset3 gxui.Label = dlabel3[cinfo.Target]
                         if cinfo.Hook!="" {
+                            tmpset2 := dlabel2[cinfo.Target]
                             tmpset2.SetText(cinfo.Hook)
+                            dlabel2[cinfo.Target] = tmpset2
                         }
                         if cinfo.CCstatus != "" {
+                            tmpset3 := dlabel3[cinfo.Target]
                             tmpset3.SetText(cinfo.CCstatus)
+                            dlabel3[cinfo.Target] = tmpset3
                         }
                         if cinfo.CCstatuschanged != "" {
+                            tmpset3 := dlabel3[cinfo.Target]
                             tmpset3.SetText(cinfo.CCstatuschanged)
+                            dlabel3[cinfo.Target] = tmpset3
                         }
-                        dlabel2[cinfo.Target] = tmpset2
-                        dlabel3[cinfo.Target] = tmpset3
                     })
+                case <-timer.C:
+                    OCIPsend(Config,owner,"Available")
                 default:
                     time.Sleep(time.Millisecond*10)
             }
