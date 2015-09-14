@@ -1,10 +1,7 @@
 package main
 
 import (
-    "crypto/md5"
-    "crypto/sha1"
     "encoding/base64"
-    "encoding/hex"
     "fmt"
     "gopkg.in/gcfg.v1"
     "math/rand"
@@ -46,15 +43,6 @@ func ConcatStr(sep string, args ... string) string {
 func MakeAuth(User string, Password string) string {
     var concatedstr string = ConcatStr(":",User,Password)
     return base64.StdEncoding.EncodeToString([]byte(concatedstr))
-}
-
-func MakeDigest(PASS string,NONCE string) string {
-    hpass := sha1.Sum([]byte(PASS))
-    spass:=hex.EncodeToString(hpass[:])
-    cnonce:=ConcatStr(":",NONCE,spass)
-    hresp := md5.Sum([]byte(cnonce))
-    resp:=hex.EncodeToString(hresp[:])
-    return resp
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

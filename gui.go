@@ -1,180 +1,181 @@
 package main
 
 import (
-    "github.com/google/gxui"
-    "github.com/google/gxui/gxfont"
-    "github.com/google/gxui/samples/flags"
+    "github.com/mattn/go-gtk/glib"
+    "github.com/mattn/go-gtk/gdk"
+    "github.com/mattn/go-gtk/gtk"
+    "github.com/fffilimonov/OCIP_go"
     "os"
     "strings"
     "time"
 )
 
-func appMain(driver gxui.Driver) {
-    guich := make(chan CallInfo,100)
+func callWindow(ociConfig ocip.ConfigT) {
+    window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
+    window.SetTitle("Call Center")
+    window.SetPosition(gtk.WIN_POS_CENTER)
+    window.SetSizeRequest(300, 700)
+    ocip.OCIPsend(ociConfig,"UserBasicCallLogsGetListRequest14sp4","userId=00070209393@spb.swisstok.ru","callLogType=Received")
+//    ocip.OCIPsend(ociConfig,"00070209393@spb.swisstok.ru","UserBasicCallLogsGetListRequest14sp4","callLogType=Received")
+    window.ShowAll()
+}
+
+func guiMain () {
+    ch := make(chan CallInfo,100)
     var arg1 string
     arg1 = os.Args[1]
     if arg1 == "" {
         LogErr(nil,"no args")
         os.Exit (1)
     }
+    var owner string = arg1
     var file string = "config"
     Config := ReadConfig(file)
-    go clientMain(guich,Config)
-    guiMain (driver,guich,arg1,Config)
-}
+    go clientMain(ch,Config)
+    var ociConfig ocip.ConfigT
+    ociConfig.Main.User=Config.Main.User
+    ociConfig.Main.Password=Config.Main.Password
+    ociConfig.Main.Host=Config.Main.Host
+    ociConfig.Main.OCIPPort=Config.Main.OCIPPort
 
-func guiinit(theme gxui.Theme,font gxui.Font) (gxui.Label,gxui.LinearLayout) {
-    var label gxui.Label
-    var cell gxui.LinearLayout
-    label = theme.CreateLabel()
-    label.SetColor(gxui.Black)
-    label.SetFont(font)
-    cell = theme.CreateLinearLayout()
-    cell.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
-    cell.SetHorizontalAlignment(gxui.AlignLeft)
-    cell.AddChild(label)
-    return label,cell
-}
-
-func setButtons(button1 gxui.Button, button2 gxui.Button, button3 gxui.Button, status string,timer *time.Timer,Config ConfigT) {
-    timer.Stop()
-    if status == "Available" {
-        button1.SetChecked(true)
-        button2.SetChecked(false)
-        button3.SetChecked(false)
-    }
-    if status == "Unavailable" {
-        button1.SetChecked(false)
-        button2.SetChecked(true)
-        button3.SetChecked(false)
-    }
-    if status == "Wrap-Up" {
-        timer.Reset(time.Second * Config.Main.Wraptime)
-        button1.SetChecked(false)
-        button2.SetChecked(false)
-        button3.SetChecked(true)
-    }
-}
-
-func initButton(theme gxui.Theme,Config ConfigT,owner string,status string) gxui.Button {
-    button := theme.CreateButton()
-    button.SetText(status)
-    button.SetType(gxui.PushButton)
-    button.SetChecked(false)
-    button.OnClick(func(gxui.MouseEvent){
-        OCIPsend(Config,owner,status)
-    })
-    return button
-}
-
-func guiMain (driver gxui.Driver, ch chan CallInfo, owner string, Config ConfigT) {
     timer := time.NewTimer(time.Second)
     timer.Stop()
-    theme := flags.CreateTheme(driver)
-    font, _ := driver.CreateFont(gxfont.Default, 15)
-    font1, _ := driver.CreateFont(gxfont.Default, 35)
-    window := theme.CreateWindow(600, 300, "Call")
-    window.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
-    layout := theme.CreateLinearLayout()
-    layout.SetBackgroundBrush(gxui.CreateBrush(gxui.White))
-    layout.SetDirection(gxui.TopToBottom)
 
-//buttons
-    button1 := initButton(theme,Config,owner,"Available")
-    button2 := initButton(theme,Config,owner,"Unavailable")
-    button3 := initButton(theme,Config,owner,"Wrap-Up")
-//button
+    glib.ThreadInit(nil)
+    gdk.ThreadsInit()
+    gdk.ThreadsEnter()
+    gtk.Init(&os.Args)
 
-//owner
-    label1 := theme.CreateLabel()
-    label1.SetColor(gxui.Black)
-    label1.SetFont(font1)
-    label1.SetHorizontalAlignment(gxui.AlignCenter)
-    label1.SetText("")
-    layout.AddChild(label1)
+    window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
+    window.SetTitle("Call Center")
+    window.SetPosition(gtk.WIN_POS_CENTER)
+    window.SetSizeRequest(700, 300)
+    window.Connect("destroy", gtk.MainQuit)
+    swin := gtk.NewScrolledWindow(nil, nil)
+    swin.SetPolicy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 
-//targets
-    var dlabel1,dlabel2,dlabel3 map[string]gxui.Label
-    var dcell1,dcell2,dcell3 map[string]gxui.LinearLayout
-    count:=1
-    dlabel1 = make(map[string]gxui.Label)
-    dcell1 = make(map[string]gxui.LinearLayout)
-    dlabel2 = make(map[string]gxui.Label)
-    dcell2 = make(map[string]gxui.LinearLayout)
-    dlabel3 = make(map[string]gxui.Label)
-    dcell3 = make(map[string]gxui.LinearLayout)
+    b_av := gtk.NewButtonWithLabel("Available")
+    b_av.Connect("clicked", func() {
+            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Available")
+        })
 
-     for _,target := range Config.Main.TargetID {
-        count=count+1
-        dlabel1[target],dcell1[target] = guiinit(theme,font)
-        dlabel2[target],dcell2[target] = guiinit(theme,font)
-        dlabel3[target],dcell3[target] = guiinit(theme,font)
-    }
+    b_un := gtk.NewButtonWithLabel("Unavailable")
+    b_un.Connect("clicked", func() {
+            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Unavailable")
+        })
 
-    table := theme.CreateTableLayout()
-    table.SetGrid(3, count) // rows, columns
+    b_wr := gtk.NewButtonWithLabel("Wrap-Up")
+    b_wr.Connect("clicked", func() {
+            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Wrap-Up")
+            timer.Reset(time.Second * Config.Main.Wraptime)
+        })
 
-    // row, column, horizontal span, vertical span
-//set owners table
-    table.SetChildAt(0, 0, 1, 1, button1)
-    table.SetChildAt(1, 0, 1, 1, button2)
-    table.SetChildAt(2, 0, 1, 1, button3)
-    count=0
+    b_cl := gtk.NewButtonWithLabel("Calls")
+    b_cl.Connect("clicked", func() {
+            callWindow(ociConfig)
+        })
+
+
+    owner1 := gtk.NewLabel(owner)
+    owner2 := gtk.NewLabel("")
+    owner3 := gtk.NewLabel("")
+    var count uint = 3
+
+    var dlabel1,dlabel2,dlabel3 map[string]*gtk.Label
+    dlabel1 = make(map[string]*gtk.Label)
+    dlabel2 = make(map[string]*gtk.Label)
+    dlabel3 = make(map[string]*gtk.Label)
+
     for _,target := range Config.Main.TargetID {
         if target != owner {
             count=count+1
-            table.SetChildAt(0, count, 1, 1, dcell1[target])
-            table.SetChildAt(1, count, 1, 1, dcell2[target])
-            table.SetChildAt(2, count, 1, 1, dcell3[target])
-            var inittarget gxui.Label = dlabel1[target]
-            inittarget.SetText(target)
-            dlabel1[target] = inittarget
+            dlabel1[target] = gtk.NewLabel(target)
+            dlabel2[target] = gtk.NewLabel("")
+            dlabel3[target] = gtk.NewLabel("")
         }
     }
-    layout.AddChild(table)
-    window.AddChild(layout)
+
+    table := gtk.NewTable(3, count, false)
+    table.Attach(owner1,0,1,0,1,gtk.EXPAND,gtk.EXPAND,1,1)
+    table.Attach(owner2,1,2,0,1,gtk.EXPAND,gtk.EXPAND,1,1)
+    table.Attach(owner3,2,3,0,1,gtk.EXPAND,gtk.EXPAND,1,1)
+
+    table.Attach(b_av,0,1,1,2,gtk.EXPAND,gtk.EXPAND,1,1)
+    table.Attach(b_un,1,2,1,2,gtk.EXPAND,gtk.EXPAND,1,1)
+    table.Attach(b_wr,2,3,1,2,gtk.EXPAND,gtk.EXPAND,1,1)
+
+    var place uint = 1
+    for _,target := range Config.Main.TargetID {
+        if target != owner {
+            place=place+1
+            table.Attach(dlabel1[target],0,1,place,place+1,gtk.EXPAND,gtk.EXPAND,1,1)
+            table.Attach(dlabel2[target],1,2,place,place+1,gtk.EXPAND,gtk.EXPAND,1,1)
+            table.Attach(dlabel3[target],2,3,place,place+1,gtk.EXPAND,gtk.EXPAND,1,1)
+        }
+    }
+
+    table.Attach(b_cl,1,2,count,count+1,gtk.EXPAND,gtk.EXPAND,1,1)
+
+    swin.AddWithViewPort(table)
+    window.Add(swin)
+    window.SetDefaultSize(200, 200)
+    window.ShowAll()
 
     go func() {
         for{
             select {
                 case cinfo := <-ch:
-                    driver.Call(func() {
-                        if cinfo.Target==owner {
-                            if cinfo.Pers == "Terminator" && cinfo.State == "Alerting" {
-                                label1.SetText(strings.Trim(cinfo.Addr,"tel:"))
-                            }
-                            if cinfo.Pers == "Terminator" && cinfo.State == "Released" {
-                                label1.SetText("")
-                            }
-                            if cinfo.CCstatus != "" {
-                                setButtons(button1,button2,button3,cinfo.CCstatus,timer,Config)
-                            }
-                            if cinfo.CCstatuschanged != "" {
-                                setButtons(button1,button2,button3,cinfo.CCstatuschanged,timer,Config)
-                            }
+                    if cinfo.Target==owner {
+                        if cinfo.Pers == "Terminator" && cinfo.State == "Alerting" {
+                            gdk.ThreadsEnter()
+                            owner2.SetLabel(strings.Trim(cinfo.Addr,"tel:"))
+                            gdk.ThreadsLeave()
                         }
-                        if cinfo.Hook!="" {
-                            tmpset2 := dlabel2[cinfo.Target]
-                            tmpset2.SetText(cinfo.Hook)
-                            dlabel2[cinfo.Target] = tmpset2
+                        if cinfo.Pers == "Terminator" && cinfo.State == "Released" {
+                            gdk.ThreadsEnter()
+                            owner2.SetLabel("")
+                            gdk.ThreadsLeave()
                         }
                         if cinfo.CCstatus != "" {
-                            tmpset3 := dlabel3[cinfo.Target]
-                            tmpset3.SetText(cinfo.CCstatus)
-                            dlabel3[cinfo.Target] = tmpset3
+                            gdk.ThreadsEnter()
+                            owner3.SetLabel(cinfo.CCstatus)
+                            gdk.ThreadsLeave()
                         }
                         if cinfo.CCstatuschanged != "" {
-                            tmpset3 := dlabel3[cinfo.Target]
-                            tmpset3.SetText(cinfo.CCstatuschanged)
-                            dlabel3[cinfo.Target] = tmpset3
+                            gdk.ThreadsEnter()
+                            owner3.SetLabel(cinfo.CCstatuschanged)
+                            gdk.ThreadsLeave()
                         }
-                    })
+                    } else {
+                        if cinfo.Hook!="" {
+                            gdk.ThreadsEnter()
+                            tmp:=dlabel2[cinfo.Target]
+                            tmp.SetLabel(cinfo.Hook)
+                            dlabel2[cinfo.Target]=tmp
+                            gdk.ThreadsLeave()
+                        }
+                        if cinfo.CCstatus != "" {
+                            gdk.ThreadsEnter()
+                            tmp:=dlabel3[cinfo.Target]
+                            tmp.SetLabel(cinfo.CCstatus)
+                            dlabel3[cinfo.Target]=tmp
+                            gdk.ThreadsLeave()
+                        }
+                        if cinfo.CCstatuschanged != "" {
+                            gdk.ThreadsEnter()
+                            tmp:=dlabel3[cinfo.Target]
+                            tmp.SetLabel(cinfo.CCstatuschanged)
+                            dlabel3[cinfo.Target]=tmp
+                            gdk.ThreadsLeave()
+                        }
+                    }
                 case <-timer.C:
-                    OCIPsend(Config,owner,"Available")
+                    ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Available")
                 default:
                     time.Sleep(time.Millisecond*10)
             }
         }
     }()
-    window.OnClose(driver.Terminate)
+
+    gtk.Main()
 }

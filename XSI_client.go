@@ -1,7 +1,6 @@
 package main
 
 import (
-    "github.com/google/gxui/drivers/gl"
     "net"
     "time"
 )
@@ -32,5 +31,5 @@ func clientMain (guich chan CallInfo,Config ConfigT) {
 }
 
 func main() {
-    gl.StartDriver(appMain)
+    guiMain()
 }

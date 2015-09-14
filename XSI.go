@@ -126,7 +126,7 @@ func XSIresubscribe(Config ConfigT,cCh chan net.Conn) {
                     for _,event := range Config.Main.Event {
                         XSISubscribe(Config,def,target,event)
                         cCh <- channel
-                        time.Sleep(time.Millisecond*500)
+                        time.Sleep(time.Millisecond*100)
                     }
                 }
                 timer.Reset(time.Second*time.Duration(exp))
@@ -201,7 +201,7 @@ func XSImain(Config ConfigT,def DefHead,ch chan string,datach chan string) {
                     LogErr(nil,data)
                 }
             default:
-                time.Sleep(time.Millisecond*250)
+                time.Sleep(time.Millisecond*10)
         }
     }
 }
