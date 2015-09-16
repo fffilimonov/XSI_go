@@ -5,7 +5,6 @@ import (
     "github.com/mattn/go-gtk/gdk"
     "github.com/mattn/go-gtk/gtk"
     "github.com/fffilimonov/OCIP_go"
-    "os"
     "strings"
     "time"
 )
@@ -19,17 +18,11 @@ func callWindow(ociConfig ocip.ConfigT) {
     window.ShowAll()
 }
 
-func guiMain () {
+func guiMain (confglobal string,conflocal string) {
     ch := make(chan CallInfo,100)
-    var arg1 string
-    arg1 = os.Args[1]
-    if arg1 == "" {
-        LogErr(nil,"no args")
-        os.Exit (1)
-    }
-    var owner string = arg1
-    var file string = "config"
-    Config := ReadConfig(file)
+    Config := ReadConfig(confglobal)
+    Configlocal := ReadConfiglocal(conflocal)
+    owner:=Configlocal.Main.Owner
     go clientMain(ch,Config)
     var ociConfig ocip.ConfigT
     ociConfig.Main.User=Config.Main.User
@@ -43,7 +36,7 @@ func guiMain () {
     glib.ThreadInit(nil)
     gdk.ThreadsInit()
     gdk.ThreadsEnter()
-    gtk.Init(&os.Args)
+    gtk.Init(nil)
 //icons to pixbuf
     im_call := gtk.NewImageFromFile("./Call-Ringing-48.png")
     pix_call := im_call.GetPixbuf()
@@ -65,23 +58,22 @@ func guiMain () {
     swin := gtk.NewScrolledWindow(nil, nil)
     swin.SetPolicy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 
-    b_av := gtk.NewButtonWithLabel("Available")
+    b_av := gtk.NewButtonWithLabel("Доступен")
     b_av.SetCanFocus(false)
     b_av.Connect("clicked", func() {
             ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Available")
         })
 
-    b_un := gtk.NewButtonWithLabel("Unavailable")
+    b_un := gtk.NewButtonWithLabel("Недоступен")
     b_un.SetCanFocus(false)
     b_un.Connect("clicked", func() {
             ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Unavailable")
         })
 
-    b_wr := gtk.NewButtonWithLabel("Wrap-Up")
+    b_wr := gtk.NewButtonWithLabel("Обработка")
     b_wr.SetCanFocus(false)
     b_wr.Connect("clicked", func() {
             ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Wrap-Up")
-            timer.Reset(time.Second * Config.Main.Wraptime)
         })
 
     b_cl := gtk.NewButtonWithLabel("Calls")
@@ -90,7 +82,12 @@ func guiMain () {
             callWindow(ociConfig)
         })
 
-    owner1 := gtk.NewLabel(owner)
+    names := make(map[string]string)
+    for iter,target := range Config.Main.TargetID {
+        names[target]=Config.Main.Name[iter]
+    }
+
+    owner1 := gtk.NewLabel(names[owner])
     owner2 := gtk.NewLabel("")
     owner3 := gtk.NewImage()
 
@@ -103,7 +100,7 @@ func guiMain () {
     for _,target := range Config.Main.TargetID {
         if target != owner {
             count=count+1
-            dlabel1[target] = gtk.NewLabel(target)
+            dlabel1[target] = gtk.NewLabel(names[target])
             dlabel2[target] = gtk.NewImage()
             dlabel3[target] = gtk.NewImage()
         }
@@ -162,6 +159,7 @@ func guiMain () {
                                     owner3.SetFromPixbuf(pix_green)
                                 } else if ccstatus == "Wrap-Up" {
                                     owner3.SetFromPixbuf(pix_yellow)
+                                    timer.Reset(time.Second * Config.Main.Wraptime)
                                 }else{
                                     owner3.SetFromPixbuf(pix_grey)
                                 }

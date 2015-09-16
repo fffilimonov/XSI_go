@@ -10,5 +10,7 @@ Wraptime="15";
 Target="User";
 TargetID="7562@broadworks.com";
 TargetID="2901@broadworks.com";
+Name="имя фамилия";
+Name="имя2 фамилия2";
 Event="Basic Call";
 Event="Call Center Agent";

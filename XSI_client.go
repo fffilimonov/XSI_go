@@ -2,6 +2,7 @@ package main
 
 import (
     "net"
+    "os"
     "time"
 )
 
@@ -20,9 +21,7 @@ func clientMain (guich chan CallInfo,Config ConfigT) {
     for {
         select {
             case data := <-datach:
-//                LogOut(data)
                 cinfo := ParseData([]byte(data))
-//                Log2Out(cinfo.Target,cinfo.Pers,cinfo.State,cinfo.Addr,cinfo.Hook,cinfo.CCstatus,cinfo.CCstatuschanged)
                 guich<-cinfo
             default:
                 time.Sleep(time.Millisecond*10)
@@ -31,5 +30,12 @@ func clientMain (guich chan CallInfo,Config ConfigT) {
 }
 
 func main() {
-    guiMain()
+    larg:=len(os.Args)
+    if larg < 3 {
+        LogErr(nil,"no args")
+        os.Exit (1)
+    }
+    var globalconf string = os.Args[1]
+    var localconf string = os.Args[2]
+    guiMain(globalconf,localconf)
 }

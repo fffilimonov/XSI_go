@@ -22,12 +22,29 @@ type ConfigT struct {
         Target string
         Wraptime time.Duration
         TargetID []string
+        Name []string
         Event []string
+    }
+}
+
+type ConfigTlocal struct {
+    Main struct {
+        Owner string
     }
 }
 
 func ReadConfig(Configfile string) ConfigT {
     var Config ConfigT
+    err := gcfg.ReadFileInto(&Config, Configfile)
+    if err != nil {
+        LogErr(err,"Config file is missing:", Configfile)
+        os.Exit (1)
+    }
+    return Config
+}
+
+func ReadConfiglocal(Configfile string) ConfigTlocal {
+    var Config ConfigTlocal
     err := gcfg.ReadFileInto(&Config, Configfile)
     if err != nil {
         LogErr(err,"Config file is missing:", Configfile)
