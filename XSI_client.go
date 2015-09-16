@@ -20,9 +20,9 @@ func clientMain (guich chan CallInfo,Config ConfigT) {
     for {
         select {
             case data := <-datach:
-                LogOut(data)
+//                LogOut(data)
                 cinfo := ParseData([]byte(data))
-                Log2Out(cinfo.Target,cinfo.Pers,cinfo.State,cinfo.Addr,cinfo.Hook,cinfo.CCstatus,cinfo.CCstatuschanged)
+//                Log2Out(cinfo.Target,cinfo.Pers,cinfo.State,cinfo.Addr,cinfo.Hook,cinfo.CCstatus,cinfo.CCstatuschanged)
                 guich<-cinfo
             default:
                 time.Sleep(time.Millisecond*10)

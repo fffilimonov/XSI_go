@@ -80,7 +80,6 @@ func XSISubscribe (Config ConfigT,def DefHead,target string,event string) {
 }
 
 func XSIResponse (ID string,def DefHead,Config ConfigT) {
-LogErr(nil,"start response")
     var status string
     var CONFPOST string = "POST /com.broadsoft.xsi-events/v2.0/channel/eventresponse HTTP/1.1"
     var CONFSET string = ConcatStr("","<?xml version=\"1.0\" encoding=\"UTF-8\"?><EventResponse xmlns=\"http://schema.broadsoft.com/xsi\"><eventID>",ID,"</eventID><statusCode>200</statusCode><reason>OK</reason></EventResponse>")
@@ -101,7 +100,6 @@ LogErr(nil,"start response")
         LogErr(nil,"resp status",ID,status)
     }
     respdesc.Close()
-LogErr(nil,"stop response")
 }
 
 func XSIresubscribe(Config ConfigT,cCh chan net.Conn) {
