@@ -36,18 +36,15 @@ func XSISubscribeCH (Config ConfigT,def DefHead) (net.Conn,string) {
     chandesc, err := dialer.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
     if err != nil {
         LogErr(err,"chan dial")
-        os.Exit(1)
     }
     fmt.Fprintf(chandesc,"%s\n%s\n%s\n%s\n%s\n\n%s\n",CPOST,def.AUTHORIZATION,def.HOSTH,CLEN,def.CTYPE,CSET)
     chanreader := bufio.NewReader(chandesc)
     status,err := chanreader.ReadString('\n')
     if err != nil {
         LogErr(err,"chan read")
-        os.Exit(1)
     }
     if !strings.Contains(status,"200") {
         LogErr(nil,"chan status",status)
-        os.Exit(1)
     }
 //get new chan id
     data := make([]byte, 1024)
@@ -63,18 +60,15 @@ func XSISubscribe (Config ConfigT,def DefHead,target string,event string) {
     subdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
     if err != nil {
         LogErr(err,"sub dial")
-        os.Exit(1)
     }
     fmt.Fprintf(subdesc,"%s\n%s\n%s\n%s\n%s\n\n%s\n",CHANPOST,def.AUTHORIZATION,def.HOSTH,CHANLEN,def.CTYPE,CHANSET)
     subreader := bufio.NewReader(subdesc)
     status,err := subreader.ReadString('\n')
     if err != nil {
         LogErr(err,"sub read")
-        os.Exit(1)
     }
     if !strings.Contains(status,"200") {
         LogErr(nil,"sub status",status)
-        os.Exit(1)
     }
     subdesc.Close()
 }
@@ -102,7 +96,7 @@ func XSIResponse (ID string,def DefHead,Config ConfigT) {
     respdesc.Close()
 }
 
-func XSIresubscribe(Config ConfigT,cCh chan net.Conn) {
+func XSIresubscribe(Config ConfigT,cCh chan net.Conn,owner string) {
     exp,_ := strconv.Atoi(Config.Main.Expires)
     timer := time.NewTimer(time.Nanosecond)
     timer2 := time.NewTimer(time.Second)
@@ -120,13 +114,12 @@ func XSIresubscribe(Config ConfigT,cCh chan net.Conn) {
                 channel,chanID := XSISubscribeCH(Config,def)
                 lchannel = channel
                 lchanID = chanID
-                for _,target := range Config.Main.TargetID {
-                    for _,event := range Config.Main.Event {
-                        XSISubscribe(Config,def,target,event)
-                        cCh <- channel
-                        time.Sleep(time.Millisecond*100)
-                    }
+                for _,event := range Config.Main.Event {
+                    XSISubscribe(Config,def,owner,event)
+                    cCh <- channel
+                    time.Sleep(time.Millisecond*100)
                 }
+                XSISubscribe(Config,def,Config.Main.CCID,Config.Main.CCEvent)
                 timer.Reset(time.Second*time.Duration(exp))
                 timer2.Reset(time.Second*6)
             case <-timer2.C:
@@ -169,14 +162,12 @@ func XSIheartbeat(Config ConfigT,def DefHead,channelID string) int {
     hdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
     if err != nil {
         LogErr(err,"HB dial")
-        os.Exit(1)
     }
     fmt.Fprintf(hdesc,"%s\n%s\n%s\n\n",PUTHEARTBEAT,def.AUTHORIZATION,def.HOSTH)
     hreader := bufio.NewReader(hdesc)
     status,err := hreader.ReadString('\n')
     if err != nil {
         LogErr(err,"HB read")
-        os.Exit(1)
     }
     if !strings.Contains(status,"200") {
         LogErr(nil,"HB status",channelID,status)
@@ -201,5 +192,47 @@ func XSImain(Config ConfigT,def DefHead,ch chan string,datach chan string) {
             default:
                 time.Sleep(time.Millisecond*10)
         }
+    }
+}
+
+func XSIGetHook (Config ConfigT,def DefHead,target string) string{
+    var GET string = ConcatStr("","GET /com.broadsoft.xsi-actions/v2.0/user/",target,"/calls/HookStatus HTTP/1.1")
+    subdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
+    if err != nil {
+        LogErr(err,"hook dial")
+    }
+    fmt.Fprintf(subdesc,"%s\n%s\n%s\n\n",GET,def.AUTHORIZATION,def.HOSTH)
+    subreader := bufio.NewReader(subdesc)
+    status,err := subreader.ReadString('\n')
+    if err != nil {
+        LogErr(err,"hook read")
+    }
+    if !strings.Contains(status,"200") {
+        LogErr(nil,"hook status",status)
+    }
+    data := make([]byte, 1024)
+    _,err = subreader.Read(data)
+    hook := GetHook(data)
+    subdesc.Close()
+    return hook
+}
+
+func XSITransfer (Config ConfigT,def DefHead,target string,CallID string,totarget string) {
+    if CallID != "" {
+        var PUT string = ConcatStr("","PUT /com.broadsoft.xsi-actions/v2.0/user/",target,"/calls/",CallID,"/BlindTransfer?address=",totarget," HTTP/1.1")
+        subdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
+        if err != nil {
+            LogErr(err,"transfer dial")
+        }
+        fmt.Fprintf(subdesc,"%s\n%s\n%s\n\n",PUT,def.AUTHORIZATION,def.HOSTH)
+        subreader := bufio.NewReader(subdesc)
+        status,err := subreader.ReadString('\n')
+        if err != nil {
+            LogErr(err,"transfer read")
+        }
+        if !strings.Contains(status,"200") {
+            LogErr(nil,"transfer status",status)
+        }
+        subdesc.Close()
     }
 }

@@ -6,15 +6,13 @@ import (
     "time"
 )
 
-func clientMain (guich chan CallInfo,Config ConfigT) {
-/* init default headers */
-    def := MakeDef(Config)
+func clientMain (guich chan CallInfo,Config ConfigT,owner string,def DefHead) {
 /* chans */
     ch := make(chan string,100)
     datach := make(chan string,100)
     cCh := make(chan net.Conn)
 /* start sybscription and reading to chan */
-    go XSIresubscribe(Config,cCh)
+    go XSIresubscribe(Config,cCh,owner)
     go XSIread(ch,cCh)
 /* handle reading */
     go XSImain(Config,def,ch,datach)
@@ -22,6 +20,8 @@ func clientMain (guich chan CallInfo,Config ConfigT) {
         select {
             case data := <-datach:
                 cinfo := ParseData([]byte(data))
+                einfo:=ParseEdata([]byte(data))
+                cinfo.Etype=einfo.Edata.Etype
                 guich<-cinfo
             default:
                 time.Sleep(time.Millisecond*10)

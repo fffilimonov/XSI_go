@@ -24,6 +24,8 @@ type ConfigT struct {
         TargetID []string
         Name []string
         Event []string
+        CCID string
+        CCEvent string
     }
 }
 
@@ -82,4 +84,9 @@ func LogOut (log string) {
 
 func Log2Out (args ... string) {
     fmt.Fprint(os.Stdout,args,"\n\n")
+}
+
+type lCalls struct {
+    Addr string
+    Time time.Time
 }
