@@ -12,60 +12,6 @@ import (
     "time"
 )
 
-func callsWindowUpdate (list *ring.Ring,dlabel4 map[uint]*gtk.Label,dlabel5 map[uint]*gtk.Label) {
-    var i uint
-    for i=0;i<uint(list.Len());i++{
-        list = list.Prev()
-        if list.Value != nil {
-            tmp:=list.Value.(lCalls)
-            tmp4:=dlabel4[i]
-            tmp4.SetLabel(tmp.Time.Format(time.Stamp))
-            tmp5:=dlabel5[i]
-            tmp5.SetLabel(tmp.Addr)
-            dlabel4[i]=tmp4
-            dlabel5[i]=tmp5
-        }
-    }
-}
-
-func agentWindowUpdate (dlabel2 map[string]*gtk.Image, dlabel3 map[string]*gtk.Image,Config ConfigT,owner string,def DefHead,pix map[string]*gdkpixbuf.Pixbuf,qlabel2 *gtk.Label) {
-    var ociConfig ocip.ConfigT
-    ociConfig.Main.User=Config.Main.User
-    ociConfig.Main.Password=Config.Main.Password
-    ociConfig.Main.Host=Config.Main.Host
-    ociConfig.Main.OCIPPort=Config.Main.OCIPPort
-    for _,target := range Config.Main.TargetID {
-        if target != owner {
-            hook:=XSIGetHook(Config,def,target)
-            if hook == "Off-Hook" {
-                tmp:=dlabel3[target]
-                tmp.SetFromPixbuf(pix["call"])
-                dlabel3[target]=tmp
-            }else{
-                tmp:=dlabel3[target]
-                tmp.SetFromPixbuf(pix["blank"])
-                dlabel3[target]=tmp
-            }
-            acdstatus:=GetAcd([]byte(ocip.OCIPsend(ociConfig,"UserCallCenterGetRequest19",ConcatStr("","userId=",target))))
-            if acdstatus == "Available" {
-                tmp:=dlabel2[target]
-                tmp.SetFromPixbuf(pix["green"])
-                dlabel2[target]=tmp
-            }else if acdstatus == "Wrap-Up" {
-                tmp:=dlabel2[target]
-                tmp.SetFromPixbuf(pix["yellow"])
-                dlabel2[target]=tmp
-            }else {
-                tmp:=dlabel2[target]
-                tmp.SetFromPixbuf(pix["grey"])
-                dlabel2[target]=tmp
-            }
-        }
-    }
-    Qstat:=GetQst([]byte(ocip.OCIPsend(ociConfig,"GroupCallCenterGetInstanceQueueStatusRequest",ConcatStr("","serviceUserId=",Config.Main.CCID))))
-    qlabel2.SetLabel(Qstat)
-}
-
 func guiMain (confglobal string,conflocal string) {
     var CallID string
     ch := make(chan CallInfo,100)
@@ -74,7 +20,7 @@ func guiMain (confglobal string,conflocal string) {
     def := MakeDef(Config)
     owner:=Configlocal.Main.Owner
     go clientMain(ch,Config,owner,def)
-    list := ring.New(4)
+    list := ring.New(15)
     var ociConfig ocip.ConfigT
     ociConfig.Main.User=Config.Main.User
     ociConfig.Main.Password=Config.Main.Password
@@ -135,16 +81,20 @@ func guiMain (confglobal string,conflocal string) {
     owner1 := gtk.NewLabel(names[owner])
     owner2 := gtk.NewLabel("")
     owner3 := gtk.NewImage()
+//qstatus
+    qlabel1:=gtk.NewLabel("В очереди:")
+    qlabel2:=gtk.NewLabel("")
 //main table
-    table := gtk.NewTable(3, 2, false)
+    table := gtk.NewTable(3, 3, false)
     table.Attach(owner1,0,1,0,1,gtk.FILL,gtk.FILL,1,1)
     table.Attach(owner3,1,2,0,1,gtk.FILL,gtk.FILL,1,1)
     table.Attach(owner2,2,3,0,1,gtk.FILL,gtk.FILL,1,1)
     table.Attach(b_av,0,1,1,2,gtk.FILL,gtk.FILL,1,1)
     table.Attach(b_un,1,2,1,2,gtk.FILL,gtk.FILL,1,1)
     table.Attach(b_wr,2,3,1,2,gtk.FILL,gtk.FILL,1,1)
+    table.Attach(qlabel1,0,1,2,3,gtk.FILL,gtk.FILL,1,1)
+    table.Attach(qlabel2,1,2,2,3,gtk.FILL,gtk.FILL,1,1)
 
-    notebook.AppendPage(table, gtk.NewLabel("Агент"))
 //agents
     dlabel1 := make(map[string]*gtk.Label)
     dlabel2 := make(map[string]*gtk.Image)
@@ -170,7 +120,7 @@ func guiMain (confglobal string,conflocal string) {
         }
     }
 
-    table1 := gtk.NewTable(4, count+2, false)
+    table1 := gtk.NewTable(4, count+1, false)
     var place uint = 0
     for _,target := range Config.Main.TargetID {
         if target != owner {
@@ -181,12 +131,6 @@ func guiMain (confglobal string,conflocal string) {
             table1.Attach(b_tr[target],3,4,place,place+1,gtk.FILL,gtk.FILL,1,1)
         }
     }
-    qlabel1:=gtk.NewLabel("В очереди:")
-    qlabel2:=gtk.NewLabel("")
-    table1.Attach(qlabel1,0,1,count+2,count+3,gtk.FILL,gtk.FILL,1,1)
-    table1.Attach(qlabel2,2,3,count+2,count+3,gtk.FILL,gtk.FILL,1,1)
-
-    notebook.AppendPage(table1, gtk.NewLabel("Агенты"))
 
     table2 := gtk.NewTable(2, 15, false)
     dlabel4 := make(map[uint]*gtk.Label)
@@ -198,22 +142,50 @@ func guiMain (confglobal string,conflocal string) {
         dlabel5[i] = gtk.NewLabel("")
         table2.Attach(dlabel5[i],1,2,i,i+1,gtk.FILL,gtk.FILL,1,1)
     }
-    notebook.AppendPage(table2, gtk.NewLabel("Звонки"))
+
+    vbox := gtk.NewVBox(false, 1)
+    vbox.Add(table)
+    vbox.Add(table2)
+    notebook.AppendPage(vbox, gtk.NewLabel("Агент"))
+    notebook.AppendPage(table1, gtk.NewLabel("Агенты"))
 
 //refresh on switch
     notebook.Connect("switch-page", func(){
-        if notebook.GetCurrentPage() != -1 {
-            if notebook.GetCurrentPage() != 1 {
-                agentWindowUpdate (dlabel2,dlabel3,Config,owner,def,pix,qlabel2)
-            }
-            if notebook.GetCurrentPage() != 2 {
-                callsWindowUpdate (list,dlabel4,dlabel5)
+        if notebook.GetCurrentPage() == 0 {
+            for _,target := range Config.Main.TargetID {
+                if target != owner {
+                    hook:=XSIGetHook(Config,def,target)
+                    if hook == "Off-Hook" {
+                        tmp:=dlabel3[target]
+                        tmp.SetFromPixbuf(pix["call"])
+                        dlabel3[target]=tmp
+                    }else{
+                        tmp:=dlabel3[target]
+                        tmp.SetFromPixbuf(pix["blank"])
+                        dlabel3[target]=tmp
+                    }
+                    acdstatus:=GetAcd([]byte(ocip.OCIPsend(ociConfig,"UserCallCenterGetRequest19",ConcatStr("","userId=",target))))
+                    if acdstatus == "Available" {
+                        tmp:=dlabel2[target]
+                        tmp.SetFromPixbuf(pix["green"])
+                        dlabel2[target]=tmp
+                    }else if acdstatus == "Wrap-Up" {
+                        tmp:=dlabel2[target]
+                        tmp.SetFromPixbuf(pix["yellow"])
+                        dlabel2[target]=tmp
+                    }else {
+                        tmp:=dlabel2[target]
+                        tmp.SetFromPixbuf(pix["grey"])
+                        dlabel2[target]=tmp
+                    }
+                }
             }
         }
     })
 
     window.Add(notebook)
     window.ShowAll()
+    var qcount int = 0
     go func() {
         for{
             select {
@@ -251,16 +223,47 @@ func guiMain (confglobal string,conflocal string) {
                             gdk.ThreadsLeave()
                         }
                     }
+                    if cinfo.Etype=="xsi:ACDCallAddedEvent" {
+                        qcount=cinfo.Acount
+                        gdk.ThreadsEnter()
+                        qlabel2.SetLabel(strconv.Itoa(qcount))
+                        gdk.ThreadsLeave()
+                    }
+                    if cinfo.Etype=="xsi:ACDCallOfferedToAgentEvent" {
+                        if qcount > 0 {
+                            qcount--
+                            gdk.ThreadsEnter()
+                            qlabel2.SetLabel(strconv.Itoa(qcount))
+                            gdk.ThreadsLeave()
+                        }
+                    }
                     if cinfo.Etype=="xsi:ACDCallAbandonedEvent" {
+                        if qcount > 0 {
+                            qcount--
+                        }
                         date,_:=strconv.Atoi(cinfo.Atime)
                         date=date/1000
                         var tmp lCalls
                         tmp.Addr=strings.Trim(cinfo.Aaddr,"tel:")
                         tmp.Time=time.Unix(int64(date),0)
-                        gdk.ThreadsEnter()
                         list.Value = tmp
                         list = list.Next()
-                        gdk.ThreadsLeave()
+                        var i uint
+                        for i=0;i<uint(list.Len());i++{
+                            list = list.Prev()
+                            if list.Value != nil {
+                                tmp:=list.Value.(lCalls)
+                                gdk.ThreadsEnter()
+                                qlabel2.SetLabel(strconv.Itoa(qcount))
+                                tmp4:=dlabel4[i]
+                                tmp4.SetLabel(tmp.Time.Format(time.Stamp))
+                                tmp5:=dlabel5[i]
+                                tmp5.SetLabel(tmp.Addr)
+                                dlabel4[i]=tmp4
+                                dlabel5[i]=tmp5
+                                gdk.ThreadsLeave()
+                            }
+                        }
                     }
                 case <-timer.C:
                     ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Available")

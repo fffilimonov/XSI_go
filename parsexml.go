@@ -34,6 +34,7 @@ type CallInfo struct {
     Addr string `xml:"eventData>call>remoteParty>address"`
     Aaddr string `xml:"eventData>queueEntry>remoteParty>address"`
     Atime string `xml:"eventData>queueEntry>removeTime"`
+    Acount int `xml:"eventData>position"`
     CCstatus string `xml:"eventData>stateInfo>state"`
     CCstatuschanged string `xml:"eventData>agentStateInfo>state"`
     Etype string
