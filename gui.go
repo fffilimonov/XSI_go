@@ -183,12 +183,11 @@ func guiMain (confglobal string,conflocal string) {
         }
     })
 
-    swin := gtk.NewScrolledWindow(nil, nil)
-    swin.SetPolicy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    swin.SetShadowType(gtk.SHADOW_IN)
-    swin.AddWithViewPort(notebook)
-
-    window.Add(swin)
+    window.Add(notebook)
+//    window.SetDecorated(false)
+    window.SetResizable(false)
+    window.SetGravity(3)
+//    window.SetKeepAbove(true)
     window.ShowAll()
     var qcount int = 0
     go func() {
