@@ -184,10 +184,7 @@ func guiMain (confglobal string,conflocal string) {
     })
 
     window.Add(notebook)
-//    window.SetDecorated(false)
-    window.SetResizable(false)
-    window.SetGravity(3)
-//    window.SetKeepAbove(true)
+    window.SetDecorated(false)
     window.ShowAll()
     var qcount int = 0
     go func() {
