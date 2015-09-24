@@ -183,7 +183,12 @@ func guiMain (confglobal string,conflocal string) {
         }
     })
 
-    window.Add(notebook)
+    swin := gtk.NewScrolledWindow(nil, nil)
+    swin.SetPolicy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    swin.SetShadowType(gtk.SHADOW_IN)
+    swin.Add(notebook)
+
+    window.Add(swin)
     window.ShowAll()
     var qcount int = 0
     go func() {
