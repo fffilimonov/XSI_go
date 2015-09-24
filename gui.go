@@ -41,15 +41,15 @@ func guiMain (confglobal string,conflocal string) {
     }
 //icons to pixbuf map
     pix := make(map[string]*gdkpixbuf.Pixbuf)
-    im_call := gtk.NewImageFromFile("./Call-Ringing-48.png")
+    im_call := gtk.NewImageFromFile("Call-Ringing-48.ico")
     pix["call"]=im_call.GetPixbuf()
-    im_blank := gtk.NewImageFromFile("./Empty-48.png")
+    im_blank := gtk.NewImageFromFile("Empty-48.ico")
     pix["blank"]=im_blank.GetPixbuf()
-    im_green := gtk.NewImageFromFile("./Green-ball-48.png")
+    im_green := gtk.NewImageFromFile("Green-ball-48.ico")
     pix["green"]=im_green.GetPixbuf()
-    im_grey := gtk.NewImageFromFile("./Grey-ball-48.png")
+    im_grey := gtk.NewImageFromFile("Grey-ball-48.ico")
     pix["grey"]=im_grey.GetPixbuf()
-    im_yellow := gtk.NewImageFromFile("./Yellow-ball-48.png")
+    im_yellow := gtk.NewImageFromFile("Yellow-ball-48.ico")
     pix["yellow"]=im_yellow.GetPixbuf()
 
     window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
@@ -186,7 +186,7 @@ func guiMain (confglobal string,conflocal string) {
     swin := gtk.NewScrolledWindow(nil, nil)
     swin.SetPolicy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     swin.SetShadowType(gtk.SHADOW_IN)
-    swin.Add(notebook)
+    swin.AddWithViewPort(notebook)
 
     window.Add(swin)
     window.ShowAll()
