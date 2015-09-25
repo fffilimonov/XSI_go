@@ -10,6 +10,7 @@ import (
     "strings"
     "strconv"
     "time"
+    "unsafe"
 )
 
 func onToolButtonClicked () {
@@ -60,7 +61,7 @@ func guiMain (confglobal string,conflocal string) {
     window.SetTitle("Call Center")
     window.SetIcon(pix["call"])
     window.SetPosition(gtk.WIN_POS_CENTER)
-    window.SetSizeRequest(350, 600)
+    window.SetSizeRequest(350, 500)
     window.SetDecorated(false)
     window.Connect("destroy", gtk.MainQuit)
 
@@ -71,34 +72,34 @@ func guiMain (confglobal string,conflocal string) {
 //qstatus
     qlabel1:=gtk.NewLabel("В очереди:")
     qlabel2:=gtk.NewLabel("")
+//buttons
+    b_av := gtk.NewButtonWithLabel("Доступен")
+    b_av.SetCanFocus(false)
+    b_av.Connect("clicked", func() {
+            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Available")
+        })
+    b_un := gtk.NewButtonWithLabel("Недоступен")
+    b_un.SetCanFocus(false)
+    b_un.Connect("clicked", func() {
+            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Unavailable")
+        })
+    b_wr := gtk.NewButtonWithLabel("Дообработка")
+    b_wr.SetCanFocus(false)
+    b_wr.Connect("clicked", func() {
+            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Wrap-Up")
+        })
 //main table
     table := gtk.NewTable(3, 3, false)
     table.Attach(owner1,0,1,0,1,gtk.FILL,gtk.FILL,1,1)
     table.Attach(owner3,1,2,0,1,gtk.FILL,gtk.FILL,1,1)
     table.Attach(owner2,2,3,0,1,gtk.FILL,gtk.FILL,1,1)
+    table.Attach(b_av,0,1,1,2,gtk.FILL,gtk.FILL,1,1)
+    table.Attach(b_un,1,2,1,2,gtk.FILL,gtk.FILL,1,1)
+    table.Attach(b_wr,2,3,1,2,gtk.FILL,gtk.FILL,1,1)
     table.Attach(qlabel1,0,1,2,3,gtk.FILL,gtk.FILL,1,1)
     table.Attach(qlabel2,1,2,2,3,gtk.FILL,gtk.FILL,1,1)
 
-//menu
-    toolbar := gtk.NewToolbar()
-    toolbar.SetStyle(gtk.TOOLBAR_ICONS)
-
-    b_av := gtk.NewToolButton(nil,"Доступен")
-    b_av.SetCanFocus(false)
-    b_av.Connect("clicked", func() {
-            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Available")
-        })
-    b_un := gtk.NewToolButton(nil,"Недоступен")
-    b_un.SetCanFocus(false)
-    b_un.Connect("clicked", func() {
-            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Unavailable")
-        })
-    b_wr := gtk.NewToolButton(nil,"Дообработка")
-    b_wr.SetCanFocus(false)
-    b_wr.Connect("clicked", func() {
-            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Wrap-Up")
-        })
-
+//menu buttons
     btnclose := gtk.NewToolButtonFromStock(gtk.STOCK_QUIT)
     btnclose.SetCanFocus(false)
     btnclose.OnClicked(gtk.MainQuit)
@@ -106,10 +107,45 @@ func guiMain (confglobal string,conflocal string) {
     btnhide := gtk.NewToolButtonFromStock(gtk.STOCK_REMOVE)
     btnhide.SetCanFocus(false)
     btnhide.OnClicked(window.Iconify)
+//move window
+    var p2,p1 point
+    var gdkwin *gdk.Window
+    p1.x=-1
+    p2.y=-1
+    var x int = 0
+    var y int = 0
+    var diffx int = 0
+    var diffy int = 0
+    px := &x
+    py := &y
 
-    toolbar.Insert(b_av, -1)
-    toolbar.Insert(b_un, -1)
-    toolbar.Insert(b_wr, -1)
+    movearea := gtk.NewDrawingArea()
+    movearea.Connect ("motion-notify-event", func(ctx *glib.CallbackContext) {
+        if gdkwin == nil {
+            gdkwin = movearea.GetWindow()
+        }
+        arg := ctx.Args(0)
+        mev := *(**gdk.EventMotion)(unsafe.Pointer(&arg))
+        var mt gdk.ModifierType
+        if mev.IsHint != 0 {
+            gdkwin.GetPointer(&p2.x, &p2.y, &mt)
+        }
+        if (gdk.EventMask(mt)&gdk.BUTTON_PRESS_MASK) != 0 {
+            if p1.x!=-1 && p1.y!=-1 {
+                window.GetPosition(px,py)
+                diffx = p2.x-p1.x
+                diffy = p2.y-p1.y
+                window.Move(x+diffx,y+diffy)
+            }
+            p1.x=p2.x-diffx
+            p1.y=p2.y-diffy
+        } else {
+            p1.x=-1
+            p2.y=-1
+        }
+    })
+
+    movearea.SetEvents(int(gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK | gdk.BUTTON_PRESS_MASK))
 
     menutable := gtk.NewTable(1, 8, true)
     menutable.Attach(btnhide,6,7,0,1,gtk.EXPAND,gtk.EXPAND,0,0)
@@ -202,8 +238,8 @@ func guiMain (confglobal string,conflocal string) {
     })
 
     vbox := gtk.NewVBox(false, 1)
+    vbox.Add(movearea)
     vbox.Add(menutable)
-    vbox.Add(toolbar)
     vbox.Add(table)
     vbox.Add(notebook)
 

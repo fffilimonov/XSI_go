@@ -90,3 +90,8 @@ type lCalls struct {
     Addr string
     Time time.Time
 }
+
+type point struct {
+    x int
+    y int
+}
