@@ -100,7 +100,7 @@ func guiMain (confglobal string,conflocal string) {
     table.Attach(qlabel2,1,2,2,3,gtk.FILL,gtk.FILL,1,1)
 
 //menu buttons
-    btnclose := gtk.NewToolButtonFromStock(gtk.STOCK_QUIT)
+    btnclose := gtk.NewToolButtonFromStock(gtk.STOCK_STOP)
     btnclose.SetCanFocus(false)
     btnclose.OnClicked(gtk.MainQuit)
 
@@ -120,6 +120,7 @@ func guiMain (confglobal string,conflocal string) {
     py := &y
 
     movearea := gtk.NewDrawingArea()
+    movearea.ModifyBG(0,gdk.NewColor("white"))
     movearea.Connect ("motion-notify-event", func(ctx *glib.CallbackContext) {
         if gdkwin == nil {
             gdkwin = movearea.GetWindow()
