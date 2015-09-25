@@ -12,6 +12,10 @@ import (
     "time"
 )
 
+func onToolButtonClicked () {
+    Log2Out("pressed")
+}
+
 func guiMain (confglobal string,conflocal string) {
     var CallID string
     ch := make(chan CallInfo,100)
@@ -56,26 +60,9 @@ func guiMain (confglobal string,conflocal string) {
     window.SetTitle("Call Center")
     window.SetIcon(pix["call"])
     window.SetPosition(gtk.WIN_POS_CENTER)
-    window.SetSizeRequest(350, 450)
+    window.SetSizeRequest(350, 600)
+    window.SetDecorated(false)
     window.Connect("destroy", gtk.MainQuit)
-
-    notebook := gtk.NewNotebook()
-//buttons
-    b_av := gtk.NewButtonWithLabel("Доступен")
-    b_av.SetCanFocus(false)
-    b_av.Connect("clicked", func() {
-            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Available")
-        })
-    b_un := gtk.NewButtonWithLabel("Недоступен")
-    b_un.SetCanFocus(false)
-    b_un.Connect("clicked", func() {
-            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Unavailable")
-        })
-    b_wr := gtk.NewButtonWithLabel("Дообработка")
-    b_wr.SetCanFocus(false)
-    b_wr.Connect("clicked", func() {
-            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Wrap-Up")
-        })
 
 //owner
     owner1 := gtk.NewLabel(names[owner])
@@ -89,12 +76,46 @@ func guiMain (confglobal string,conflocal string) {
     table.Attach(owner1,0,1,0,1,gtk.FILL,gtk.FILL,1,1)
     table.Attach(owner3,1,2,0,1,gtk.FILL,gtk.FILL,1,1)
     table.Attach(owner2,2,3,0,1,gtk.FILL,gtk.FILL,1,1)
-    table.Attach(b_av,0,1,1,2,gtk.FILL,gtk.FILL,1,1)
-    table.Attach(b_un,1,2,1,2,gtk.FILL,gtk.FILL,1,1)
-    table.Attach(b_wr,2,3,1,2,gtk.FILL,gtk.FILL,1,1)
     table.Attach(qlabel1,0,1,2,3,gtk.FILL,gtk.FILL,1,1)
     table.Attach(qlabel2,1,2,2,3,gtk.FILL,gtk.FILL,1,1)
 
+//menu
+    toolbar := gtk.NewToolbar()
+    toolbar.SetStyle(gtk.TOOLBAR_ICONS)
+
+    b_av := gtk.NewToolButton(nil,"Доступен")
+    b_av.SetCanFocus(false)
+    b_av.Connect("clicked", func() {
+            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Available")
+        })
+    b_un := gtk.NewToolButton(nil,"Недоступен")
+    b_un.SetCanFocus(false)
+    b_un.Connect("clicked", func() {
+            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Unavailable")
+        })
+    b_wr := gtk.NewToolButton(nil,"Дообработка")
+    b_wr.SetCanFocus(false)
+    b_wr.Connect("clicked", func() {
+            ocip.OCIPsend(ociConfig,"UserCallCenterModifyRequest19",ConcatStr("","userId=",owner),"agentACDState=Wrap-Up")
+        })
+
+    btnclose := gtk.NewToolButtonFromStock(gtk.STOCK_QUIT)
+    btnclose.SetCanFocus(false)
+    btnclose.OnClicked(gtk.MainQuit)
+
+    btnhide := gtk.NewToolButtonFromStock(gtk.STOCK_REMOVE)
+    btnhide.SetCanFocus(false)
+    btnhide.OnClicked(window.Iconify)
+
+    toolbar.Insert(b_av, -1)
+    toolbar.Insert(b_un, -1)
+    toolbar.Insert(b_wr, -1)
+
+    menutable := gtk.NewTable(1, 8, true)
+    menutable.Attach(btnhide,6,7,0,1,gtk.EXPAND,gtk.EXPAND,0,0)
+    menutable.Attach(btnclose,7,8,0,1,gtk.EXPAND,gtk.EXPAND,0,0)
+
+    notebook := gtk.NewNotebook()
 //agents
     dlabel1 := make(map[string]*gtk.Label)
     dlabel2 := make(map[string]*gtk.Image)
@@ -120,34 +141,31 @@ func guiMain (confglobal string,conflocal string) {
         }
     }
 
-    table1 := gtk.NewTable(4, count+1, false)
+    table_ag := gtk.NewTable(4, count+1, false)
     var place uint = 0
     for _,target := range Config.Main.TargetID {
         if target != owner {
             place=place+1
-            table1.Attach(dlabel1[target],0,1,place,place+1,gtk.FILL,gtk.FILL,1,1)
-            table1.Attach(dlabel3[target],2,3,place,place+1,gtk.FILL,gtk.FILL,1,1)
-            table1.Attach(dlabel2[target],1,2,place,place+1,gtk.FILL,gtk.FILL,1,1)
-            table1.Attach(b_tr[target],3,4,place,place+1,gtk.FILL,gtk.FILL,1,1)
+            table_ag.Attach(dlabel1[target],0,1,place,place+1,gtk.FILL,gtk.FILL,1,1)
+            table_ag.Attach(dlabel3[target],2,3,place,place+1,gtk.FILL,gtk.FILL,1,1)
+            table_ag.Attach(dlabel2[target],1,2,place,place+1,gtk.FILL,gtk.FILL,1,1)
+            table_ag.Attach(b_tr[target],3,4,place,place+1,gtk.FILL,gtk.FILL,1,1)
         }
     }
 
-    table2 := gtk.NewTable(2, 15, false)
+    table_cl := gtk.NewTable(2, 15, false)
     dlabel4 := make(map[uint]*gtk.Label)
     dlabel5 := make(map[uint]*gtk.Label)
     var i uint
     for i=0;i<uint(list.Len());i++{
         dlabel4[i] = gtk.NewLabel("")
-        table2.Attach(dlabel4[i],0,1,i,i+1,gtk.FILL,gtk.FILL,1,1)
+        table_cl.Attach(dlabel4[i],0,1,i,i+1,gtk.FILL,gtk.FILL,1,1)
         dlabel5[i] = gtk.NewLabel("")
-        table2.Attach(dlabel5[i],1,2,i,i+1,gtk.FILL,gtk.FILL,1,1)
+        table_cl.Attach(dlabel5[i],1,2,i,i+1,gtk.FILL,gtk.FILL,1,1)
     }
 
-    vbox := gtk.NewVBox(false, 1)
-    vbox.Add(table)
-    vbox.Add(table2)
-    notebook.AppendPage(vbox, gtk.NewLabel("Агент"))
-    notebook.AppendPage(table1, gtk.NewLabel("Агенты"))
+    notebook.AppendPage(table_cl, gtk.NewLabel("Звонки"))
+    notebook.AppendPage(table_ag, gtk.NewLabel("Агенты"))
 
 //refresh on switch
     notebook.Connect("switch-page", func(){
@@ -183,8 +201,13 @@ func guiMain (confglobal string,conflocal string) {
         }
     })
 
-    window.Add(notebook)
-    window.SetDecorated(false)
+    vbox := gtk.NewVBox(false, 1)
+    vbox.Add(menutable)
+    vbox.Add(toolbar)
+    vbox.Add(table)
+    vbox.Add(notebook)
+
+    window.Add(vbox)
     window.ShowAll()
     var qcount int = 0
     go func() {
