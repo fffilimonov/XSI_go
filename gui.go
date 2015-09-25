@@ -120,7 +120,6 @@ func guiMain (confglobal string,conflocal string) {
     py := &y
 
     movearea := gtk.NewDrawingArea()
-    movearea.ModifyBG(0,gdk.NewColor("white"))
     movearea.Connect ("motion-notify-event", func(ctx *glib.CallbackContext) {
         if gdkwin == nil {
             gdkwin = movearea.GetWindow()
@@ -149,6 +148,7 @@ func guiMain (confglobal string,conflocal string) {
     movearea.SetEvents(int(gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK | gdk.BUTTON_PRESS_MASK))
 
     menutable := gtk.NewTable(1, 8, true)
+    menutable.Attach(movearea,0,6,0,1,gtk.FILL,gtk.FILL,0,0)
     menutable.Attach(btnhide,6,7,0,1,gtk.EXPAND,gtk.EXPAND,0,0)
     menutable.Attach(btnclose,7,8,0,1,gtk.EXPAND,gtk.EXPAND,0,0)
 
@@ -239,7 +239,6 @@ func guiMain (confglobal string,conflocal string) {
     })
 
     vbox := gtk.NewVBox(false, 1)
-    vbox.Add(movearea)
     vbox.Add(menutable)
     vbox.Add(table)
     vbox.Add(notebook)
