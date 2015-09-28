@@ -164,7 +164,7 @@ func XSIResponse (ID string,def DefHead,Config ConfigT) {
     respdesc.Close()
 }
 
-func XSIresubscribe(Config ConfigT,cCh chan net.Conn,owner string) {
+func XSIresubscribe(Config ConfigT,cCh chan net.Conn,owner string,Event []string) {
     exp,_ := strconv.Atoi(Config.Main.Expires)
     timer := time.NewTimer(time.Nanosecond)
     timer2 := time.NewTimer(time.Second)
@@ -182,7 +182,7 @@ func XSIresubscribe(Config ConfigT,cCh chan net.Conn,owner string) {
                 channel,chanID := XSISubscribeCH(Config,def)
                 lchannel = channel
                 lchanID = chanID
-                for _,event := range Config.Main.Event {
+                for _,event := range Event {
                     XSISubscribe(Config,def,owner,event)
                     cCh <- channel
                     time.Sleep(time.Millisecond*100)
