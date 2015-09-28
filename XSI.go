@@ -1,8 +1,12 @@
-package main
+
+package xsi
 
 import (
     "bufio"
+    "encoding/base64"
+    "encoding/xml"
     "fmt"
+    "math/rand"
     "net"
     "os"
     "strconv"
@@ -10,11 +14,77 @@ import (
     "time"
 )
 
+type ConfigT struct {
+    Main struct {
+        User string
+        Password string
+        Host string
+        HTTPHost string
+        HTTPPort string
+        Expires string
+    }
+}
+
 type DefHead struct {
     AUTHORIZATION string
     HOSTH string
     CTYPE string
     CHANID string
+}
+
+type EventID struct {
+    XMLName xml.Name `xml:"Event"`
+    Content string `xml:"eventID"`
+}
+
+type HookST struct {
+    Hook string `xml:"hookStatus"`
+}
+
+type ChannelID struct {
+    XMLName xml.Name `xml:"Channel"`
+    Content string `xml:"channelId"`
+}
+
+func GetChanID (data []byte) string {
+    var channelid ChannelID
+    xml.Unmarshal(data, &channelid)
+    return channelid.Content
+}
+
+func GetEventID (data []byte) string {
+    var eventid EventID
+    xml.Unmarshal(data, &eventid)
+    return eventid.Content
+}
+
+func GetHook (data []byte) string {
+    var hook HookST
+    xml.Unmarshal(data, &hook)
+    return hook.Hook
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+func randSeq(n int) string {
+    rand.Seed(time.Now().UnixNano())
+    b := make([]rune, n)
+    for i := range b {
+        b[i] = letters[rand.Intn(len(letters))]
+    }
+    return string(b)
+}
+
+func ConcatStr(sep string, args ... string) string {
+    return strings.Join(args, sep)
+}
+
+func MakeAuth(User string, Password string) string {
+    var concatedstr string = ConcatStr(":",User,Password)
+    return base64.StdEncoding.EncodeToString([]byte(concatedstr))
+}
+
+func LogErr (err error,args ... string) {
+    fmt.Fprint(os.Stderr,time.Now(),args,err,"\n")
 }
 
 func MakeDef (Config ConfigT) DefHead {
@@ -81,14 +151,12 @@ func XSIResponse (ID string,def DefHead,Config ConfigT) {
     respdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
     if err != nil {
         LogErr(err,"resp dial")
-        os.Exit(1)
     }
     fmt.Fprintf(respdesc,"%s\n%s\n%s\n%s\n%s\n\n%s\n",CONFPOST,def.AUTHORIZATION,def.HOSTH,CONFLEN,def.CTYPE,CONFSET)
     respreader := bufio.NewReader(respdesc)
     status,err = respreader.ReadString('\n')
     if err != nil {
         LogErr(err,"resp read")
-        os.Exit(1)
     }
     if !strings.Contains(status,"200") {
         LogErr(nil,"resp status",ID,status)
