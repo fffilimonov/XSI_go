@@ -124,7 +124,7 @@ func XSISubscribeCH (Config ConfigT,def DefHead) (net.Conn,string) {
 }
 
 func XSISubscribe (Config ConfigT,def DefHead,target string,event string) {
-    var CHANPOST string = ConcatStr("","POST /com.broadsoft.xsi-events/v2.0/",Config.Main.Target,"/",target,"/subscription HTTP/1.1")
+    var CHANPOST string = ConcatStr("","POST /com.broadsoft.xsi-events/v2.0/",target,"/",target,"/subscription HTTP/1.1")
     var CHANSET string = ConcatStr("","<Subscription xmlns=\"http://schema.broadsoft.com/xsi\"><event>",event,"</event><expires>",Config.Main.Expires,"</expires><channelSetId>",def.CHANID,"</channelSetId><applicationId>CommPilotApplication</applicationId></Subscription>")
     var CHANLEN string = ConcatStr("","Content-Length: ",strconv.Itoa(len(CHANSET)))
     subdesc, err := net.Dial("tcp", ConcatStr(":",Config.Main.Host,Config.Main.HTTPPort))
